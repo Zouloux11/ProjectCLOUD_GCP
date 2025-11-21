@@ -1,0 +1,159 @@
+---
+- name: Setup Spark Cluster
+  hosts: all
+  become: yes
+  vars:
+    java_version: "openjdk-11-jdk"
+    hadoop_version: "2.7.1"
+    spark_version: "2.4.3"
+    install_dir: "/opt"
+    hadoop_home: "{{ install_dir }}/hadoop-{{ hadoop_version }}"
+    spark_home: "{{ install_dir }}/spark-{{ spark_version }}-bin-hadoop2.7"
+    
+  tasks:
+    - name: Install Java
+      apt:
+        name: "{{ java_version }}"
+        state: present
+        update_cache: yes
+    
+    - name: Install required packages
+      apt:
+        name:
+          - wget
+          - ssh
+          - rsync
+          - git
+        state: present
+    
+    - name: Download Hadoop
+      get_url:
+        url: "https://archive.apache.org/dist/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz"
+        dest: "/tmp/hadoop.tar.gz"
+    
+    - name: Extract Hadoop
+      unarchive:
+        src: "/tmp/hadoop.tar.gz"
+        dest: "{{ install_dir }}"
+        remote_src: yes
+        creates: "{{ hadoop_home }}"
+    
+    - name: Download Spark
+      get_url:
+        url: "https://archive.apache.org/dist/spark/spark-{{ spark_version }}/spark-{{ spark_version }}-bin-hadoop2.7.tgz"
+        dest: "/tmp/spark.tar.gz"
+    
+    - name: Extract Spark
+      unarchive:
+        src: "/tmp/spark.tar.gz"
+        dest: "{{ install_dir }}"
+        remote_src: yes
+        creates: "{{ spark_home }}"
+    
+    - name: Set environment variables
+      lineinfile:
+        path: /etc/environment
+        line: "{{ item }}"
+      loop:
+        - "JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64"
+        - "HADOOP_HOME={{ hadoop_home }}"
+        - "SPARK_HOME={{ spark_home }}"
+        - "PATH=$PATH:{{ hadoop_home }}/bin:{{ hadoop_home }}/sbin:{{ spark_home }}/bin:{{ spark_home }}/sbin"
+
+- name: Configure Master Node
+  hosts: master
+  become: yes
+  vars:
+    hadoop_home: "/opt/hadoop-2.7.1"
+    spark_home: "/opt/spark-2.4.3-bin-hadoop2.7"
+    master_hostname: "{{ hostvars[groups['master'][0]]['inventory_hostname'] }}"
+    
+  tasks:
+    - name: Configure Hadoop core-site.xml
+      copy:
+        dest: "{{ hadoop_home }}/etc/hadoop/core-site.xml"
+        content: |
+          <configuration>
+            <property>
+              <name>hadoop.tmp.dir</name>
+              <value>/tmp/hadoop</value>
+            </property>
+            <property>
+              <name>fs.defaultFS</name>
+              <value>hdfs://{{ master_hostname }}:9000</value>
+            </property>
+          </configuration>
+    
+    - name: Configure Hadoop hdfs-site.xml
+      copy:
+        dest: "{{ hadoop_home }}/etc/hadoop/hdfs-site.xml"
+        content: |
+          <configuration>
+            <property>
+              <name>dfs.replication</name>
+              <value>1</value>
+            </property>
+            <property>
+              <name>dfs.namenode.datanode.registration.ip-hostname-check</name>
+              <value>false</value>
+            </property>
+          </configuration>
+    
+    - name: Configure Hadoop slaves
+      copy:
+        dest: "{{ hadoop_home }}/etc/hadoop/slaves"
+        content: |
+          {% for host in groups['workers'] %}
+          {{ hostvars[host]['inventory_hostname'] }}
+          {% endfor %}
+    
+    - name: Configure Spark slaves
+      copy:
+        dest: "{{ spark_home }}/conf/slaves"
+        content: |
+          {% for host in groups['workers'] %}
+          {{ hostvars[host]['inventory_hostname'] }}
+          {% endfor %}
+    
+    - name: Configure Spark environment
+      copy:
+        dest: "{{ spark_home }}/conf/spark-env.sh"
+        content: |
+          export SPARK_MASTER_HOST={{ master_hostname }}
+          export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+        mode: '0755'
+    
+    - name: Format HDFS namenode
+      shell: "{{ hadoop_home }}/bin/hdfs namenode -format -force"
+      args:
+        creates: /tmp/hadoop/dfs/name
+
+- name: Deploy and Compile Application
+  hosts: edge
+  become: yes
+  vars:
+    spark_home: "/opt/spark-2.4.3-bin-hadoop2.7"
+    app_dir: "/home/{{ ansible_user }}/spark-app"
+    
+  tasks:
+    - name: Clone Git repository
+      git:
+        repo: 'https://github.com/Zouloux11/ProjectCLOUD_GCP.git'
+        dest: "{{ app_dir }}"
+        force: yes
+      become: no
+    
+    - name: Make scripts executable
+      file:
+        path: "{{ app_dir }}/spark-app/{{ item }}"
+        mode: '0755'
+      loop:
+        - comp.sh
+        - run.sh
+    
+    - name: Compile WordCount
+      shell: ./comp.sh
+      args:
+        chdir: "{{ app_dir }}/spark-app"
+      environment:
+        SPARK_HOME: "/opt/spark-2.4.3-bin-hadoop2.7"
