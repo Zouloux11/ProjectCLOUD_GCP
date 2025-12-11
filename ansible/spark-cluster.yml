@@ -11,11 +11,14 @@
     spark_home: "{{ install_dir }}/spark-{{ spark_version }}-bin-hadoop2.7"
     
   tasks:
-    - name: Install Java
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+    
+    - name: Install Java 11
       apt:
         name: "{{ java_version }}"
         state: present
-        update_cache: yes
     
     - name: Install required packages
       apt:
