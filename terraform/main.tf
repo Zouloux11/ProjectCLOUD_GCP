@@ -73,3 +73,28 @@ resource "google_compute_instance" "edge" {
 
 }
 
+resource "google_compute_firewall" "allow_spark_ui" {
+  name    = "allow-spark-ui"
+  network = google_compute_network.custom_vpc.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["8080"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  description   = "Allow Spark UI access"
+}
+
+resource "google_compute_firewall" "allow_hdfs_ui" {
+  name    = "allow-hdfs-ui"
+  network = google_compute_network.custom_vpc.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["50070", "9870"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  description   = "Allow HDFS UI access"
+}
