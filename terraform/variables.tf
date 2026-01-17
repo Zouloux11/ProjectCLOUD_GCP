@@ -1,6 +1,6 @@
 variable "gcp_project" {
   type        = string
-  default     = "projetsparkantoineloic"
+  default     = "gcpproject-484418"
 }
 variable "gcp_zone" {
   type        = string

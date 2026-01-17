@@ -1,5 +1,7 @@
 #!/bin/bash
-shuf -r -n 50000 << 'WORDS' > /tmp/chunk.txt
+
+# Créer un chunk texte de base (~80 bytes par ligne)
+cat > /tmp/base_words.txt << 'WORDS'
 apache spark distributed computing framework processes big data across clusters
 machine learning algorithms analyze patterns in massive datasets efficiently
 python java scala programming languages support functional reactive paradigms
@@ -8,14 +10,38 @@ network protocols transmit packets through routers switches and firewalls secure
 database systems optimize queries using indexes caching and query planning
 artificial intelligence models train on gpus using backpropagation gradient descent
 distributed systems handle failures through replication consensus and partitioning
-web applications render components using javascript frameworks and virtual dom
-data pipelines transform extract load information between heterogeneous sources
-software engineering practices include testing debugging profiling and monitoring
-cybersecurity measures protect networks from intrusions malware and vulnerabilities
-operating systems manage processes memory filesystems and device drivers
-algorithms solve problems using divide conquer dynamic programming greedy approaches
-compilers translate source code into executable machine instructions optimized
 WORDS
 
-for i in {1..10240}; do cat /tmp/chunk.txt; done > test_10gb.txt
-rm /tmp/chunk.txt
+gen() {
+    local name=$1
+    local size_mb=$2
+    local output="test_${name}.txt"
+    
+    echo "Génération de ${output} (${size_mb} MB)..."
+    
+    # Calculer le nombre de lignes nécessaires
+    # ~80 bytes par ligne = ~12500 lignes pour 1MB
+    local lines=$((size_mb * 12500))
+    
+    # Générer avec shuf pour randomiser
+    shuf -r -n $lines /tmp/base_words.txt > "$output"
+    
+    local actual=$(du -h "$output" | cut -f1)
+    echo "✅ ${output} créé : ${actual}"
+    echo ""
+}
+
+rm -f test_*.txt
+
+gen "10mb"   10
+gen "50mb"   50
+gen "100mb"  100
+gen "250mb"  250
+gen "500mb"  500
+gen "1gb"    1024
+gen "2gb"    2048
+gen "10gb"   10240
+
+rm /tmp/base_words.txt
+
+ls -lh test_*.txt

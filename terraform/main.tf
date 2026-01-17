@@ -11,15 +11,16 @@ resource "google_compute_subnetwork" "subnet" {
 }
 
 resource "google_compute_instance" "workers" {
-  count        = 2
+  count        = 3
   name         = "worker-${count.index + 1}"
-  machine_type = "e2-micro"
+  machine_type = "e2-standard-2"
   zone         = var.gcp_zone
   tags         = ["workers"]
   
   boot_disk {
     initialize_params {
       image = "debian-cloud/debian-12"
+      size  = 24
     }
   }
   network_interface {
@@ -33,7 +34,7 @@ resource "google_compute_instance" "workers" {
 
 resource "google_compute_instance" "master" {
   name         = "master"
-  machine_type = "e2-micro"
+  machine_type = "e2-medium"
   zone         = var.gcp_zone
   tags         = ["master"]
   boot_disk {
@@ -52,7 +53,7 @@ resource "google_compute_instance" "master" {
 
 resource "google_compute_instance" "edge" {
   name         = "edge"
-  machine_type = "e2-micro"
+  machine_type = "e2-highmem-2"
   zone         = var.gcp_zone
   tags         = ["edge"]
 
@@ -60,6 +61,7 @@ resource "google_compute_instance" "edge" {
   boot_disk {
     initialize_params {
       image = "debian-cloud/debian-12"
+      size  = 50 
     }
   }
 
