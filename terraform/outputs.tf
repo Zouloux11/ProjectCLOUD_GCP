@@ -15,8 +15,6 @@ resource "local_file" "ansible_inventory" {
     master_ip = google_compute_instance.master.network_interface[0].access_config[0].nat_ip
     worker_ips = google_compute_instance.workers[*].network_interface[0].access_config[0].nat_ip
     edge_ip = google_compute_instance.edge.network_interface[0].access_config[0].nat_ip
-    ssh_user = var.ssh_user
-    ssh_key = var.ssh_private_key_path
   })
   filename = "${path.module}/../ansible/inventory.ini"
 }

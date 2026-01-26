@@ -1,13 +1,13 @@
 [master]
-${master_ip} ansible_user=${ssh_user} ansible_ssh_private_key_file=${ssh_key} ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+${master_ip}
 
 [workers]
 %{ for ip in worker_ips ~}
-${ip} ansible_user=${ssh_user} ansible_ssh_private_key_file=${ssh_key} ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+${ip}
 %{ endfor ~}
 
 [edge]
-${edge_ip} ansible_user=${ssh_user} ansible_ssh_private_key_file=${ssh_key} ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+${edge_ip}
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3

@@ -16,7 +16,7 @@ resource "google_compute_instance" "workers" {
   machine_type = "e2-standard-2"
   zone         = var.gcp_zone
   tags         = ["workers"]
-  
+
   boot_disk {
     initialize_params {
       image = "debian-cloud/debian-12"
@@ -27,8 +27,14 @@ resource "google_compute_instance" "workers" {
     subnetwork = google_compute_subnetwork.subnet.self_link
     access_config{}
   }
-    metadata = {
-    ssh-keys = "${var.ssh_user}:${file(var.ssh_public_key_path)}"
+
+  service_account {
+    email  = google_service_account.cluster_sa.email
+    scopes = ["cloud-platform"]
+  }
+  
+  metadata = {
+    enable-oslogin = "TRUE"
   }
 }
 
@@ -46,8 +52,14 @@ resource "google_compute_instance" "master" {
     subnetwork = google_compute_subnetwork.subnet.self_link
     access_config{}
   }
-    metadata = {
-    ssh-keys = "${var.ssh_user}:${file(var.ssh_public_key_path)}"
+
+  service_account {
+    email  = google_service_account.cluster_sa.email
+    scopes = ["cloud-platform"]
+  }
+  
+  metadata = {
+    enable-oslogin = "TRUE"
   }
 }
 
@@ -69,10 +81,15 @@ resource "google_compute_instance" "edge" {
     subnetwork = google_compute_subnetwork.subnet.self_link
     access_config{}
   }
-    metadata = {
-    ssh-keys = "${var.ssh_user}:${file(var.ssh_public_key_path)}"
-  }
 
+  service_account {
+    email  = google_service_account.cluster_sa.email
+    scopes = ["cloud-platform"]
+  }
+  
+  metadata = {
+    enable-oslogin = "TRUE"
+  }
 }
 
 resource "google_compute_firewall" "allow_spark_ui" {
