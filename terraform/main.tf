@@ -28,11 +28,6 @@ resource "google_compute_instance" "workers" {
     access_config{}
   }
 
-  service_account {
-    email  = google_service_account.cluster_sa.email
-    scopes = ["cloud-platform"]
-  }
-  
   metadata = {
     enable-oslogin = "TRUE"
   }
@@ -53,11 +48,6 @@ resource "google_compute_instance" "master" {
     access_config{}
   }
 
-  service_account {
-    email  = google_service_account.cluster_sa.email
-    scopes = ["cloud-platform"]
-  }
-  
   metadata = {
     enable-oslogin = "TRUE"
   }
@@ -82,11 +72,6 @@ resource "google_compute_instance" "edge" {
     access_config{}
   }
 
-  service_account {
-    email  = google_service_account.cluster_sa.email
-    scopes = ["cloud-platform"]
-  }
-  
   metadata = {
     enable-oslogin = "TRUE"
   }
